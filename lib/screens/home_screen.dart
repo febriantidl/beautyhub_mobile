@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
 import '../services/api_service.dart';
-import '../models/mua_model.dart';
-import 'login_screen.dart';
 import 'detail_mua_screen.dart';
 import 'chatbot_screen.dart';
 import 'image_search_screen.dart';
+import 'my_bookings_screen.dart';
+import 'notification_screen.dart';  // ← ini yang baru
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -14,459 +14,382 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  List<MuaModel> _muas        = [];
-  bool           _isLoading   = true;
-  String?        _errorMessage;
-  int            _currentPage = 1;
-  bool           _hasMore     = true;
+  int           _currentIndex = 0;
+  List<dynamic> _muas         = [];
+  bool          _isLoading    = true;
+  String        _userName     = 'Pengguna';
 
-  // Filter state
-  String _sort = 'rating';
+  static const Color maroon   = Color(0xFF4D0012);
+  static const Color pinkSoft = Color(0xFFCF4C4C);
 
   @override
   void initState() {
     super.initState();
-    _loadMuas();
+    _loadData();
   }
 
-  // ─── GET /api/muas ────────────────────────────────────────────────
-  Future<void> _loadMuas({bool refresh = false}) async {
-    if (refresh) {
-      setState(() {
-        _currentPage = 1;
-        _muas        = [];
-        _hasMore     = true;
-      });
-    }
-
-    setState(() => _isLoading = true);
-
+  Future<void> _loadData() async {
     try {
-      final result = await ApiService.getMuas(
-        sort   : _sort,
-        perPage: 10,
-        page   : _currentPage,
-      );
-
-      if (!mounted) return;
-
-      if (result['success'] == true) {
-        final data = result['data'] as List;
-        final meta = result['meta'];
-
-        final newMuas = data.map((m) => MuaModel.fromJson(m)).toList();
-
-        setState(() {
-          _muas        = [..._muas, ...newMuas];
-          _hasMore     = meta['current_page'] < meta['last_page'];
-          _errorMessage = null;
-        });
-      } else {
-        setState(() => _errorMessage = 'Gagal memuat data MUA');
+      final user = await ApiService.getCachedUser();
+      if (user != null) {
+        setState(() => _userName = user['name'] ?? 'Pengguna');
       }
-    } catch (e) {
-      setState(() => _errorMessage = 'Tidak bisa terhubung ke server\n$e');
+      final result = await ApiService.getMuas();
+      if (result['success'] == true) {
+        setState(() => _muas = result['data'] ?? []);
+      }
+    } catch (_) {
     } finally {
-      if (mounted) setState(() => _isLoading = false);
+      setState(() => _isLoading = false);
     }
-  }
-
-  // ─── Logout ───────────────────────────────────────────────────────
-  Future<void> _logout() async {
-    showDialog(
-      context: context,
-      builder: (ctx) => AlertDialog(
-        title  : const Text('Keluar'),
-        content: const Text('Yakin ingin keluar?'),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child    : const Text('Batal'),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(ctx);
-              await ApiService.logout();
-              if (!mounted) return;
-              Navigator.pushReplacement(
-                context,
-                MaterialPageRoute(builder: (_) => const LoginScreen()),
-              );
-            },
-            style    : ElevatedButton.styleFrom(backgroundColor: Colors.red),
-            child    : const Text('Keluar', style: TextStyle(color: Colors.white)),
-          ),
-        ],
-      ),
-    );
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.grey[50],
-      appBar: AppBar(
-        title          : const Text(
-          'BeautyHub',
-          style: TextStyle(fontWeight: FontWeight.bold),
-        ),
-        backgroundColor: const Color(0xFFE91E8C),
-        foregroundColor: Colors.white,
-        actions        : [
-          // Tombol Search by Image
-          IconButton(
-            icon    : const Icon(Icons.image_search),
-            tooltip : 'Cari berdasarkan gambar',
-            onPressed: () => Navigator.push(
-              context,
-              MaterialPageRoute(builder: (_) => const ImageSearchScreen()),
-            ),
-          ),
-          // Tombol Logout
-          IconButton(
-            icon    : const Icon(Icons.logout),
-            tooltip : 'Keluar',
-            onPressed: _logout,
-          ),
+      backgroundColor: const Color(0xFFF5F5F5),
+      body: IndexedStack(
+        index: _currentIndex,
+        children: [
+          _buildHome(),
+          const MyBookingsScreen(),
+          const ImageSearchScreen(),
+          const ChatbotScreen(),
+          _buildProfil(),
         ],
       ),
+      bottomNavigationBar: _buildBottomNav(),
+    );
+  }
 
-      // ── Floating Button: Chatbot ─────────────────────────────────
-      floatingActionButton: FloatingActionButton.extended(
-        backgroundColor: const Color(0xFFE91E8C),
-        foregroundColor: Colors.white,
-        onPressed      : () => Navigator.push(
-          context,
-          MaterialPageRoute(builder: (_) => const ChatbotScreen()),
-        ),
-        icon : const Icon(Icons.chat_bubble_outline),
-        label: const Text('Chatbot'),
-      ),
-
-      body: RefreshIndicator(
-        onRefresh    : () => _loadMuas(refresh: true),
-        color        : const Color(0xFFE91E8C),
-        child        : CustomScrollView(
-          slivers: [
-            // ── Header / Banner ──────────────────────────────────
-            SliverToBoxAdapter(
-              child: Container(
-                color  : const Color(0xFFE91E8C),
-                padding: const EdgeInsets.fromLTRB(16, 0, 16, 24),
-                child  : Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'Temukan MUA Terbaikmu 💄',
-                      style: TextStyle(
-                        color     : Colors.white,
-                        fontSize  : 18,
-                        fontWeight: FontWeight.bold,
-                      ),
+  Widget _buildHome() {
+    return Column(
+      children: [
+        Container(
+          padding: const EdgeInsets.only(top: 52, left: 20, right: 20, bottom: 20),
+          decoration: const BoxDecoration(
+            gradient: LinearGradient(
+              colors: [maroon, pinkSoft],
+              begin : Alignment.topLeft,
+              end   : Alignment.bottomRight,
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding   : const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color       : Colors.white24,
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    const SizedBox(height: 4),
-                    const Text(
-                      'Pilih dari MUA profesional yang telah terverifikasi',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                    const SizedBox(height: 12),
-                    // Sort filter chips
-                    Row(
+                    child: const Icon(Icons.person, color: Colors.white, size: 28),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        _SortChip(
-                          label    : 'Rating',
-                          value    : 'rating',
-                          selected : _sort == 'rating',
-                          onTap    : () {
-                            setState(() => _sort = 'rating');
-                            _loadMuas(refresh: true);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _SortChip(
-                          label    : 'Pengalaman',
-                          value    : 'experience',
-                          selected : _sort == 'experience',
-                          onTap    : () {
-                            setState(() => _sort = 'experience');
-                            _loadMuas(refresh: true);
-                          },
-                        ),
-                        const SizedBox(width: 8),
-                        _SortChip(
-                          label    : 'Ulasan',
-                          value    : 'reviews',
-                          selected : _sort == 'reviews',
-                          onTap    : () {
-                            setState(() => _sort = 'reviews');
-                            _loadMuas(refresh: true);
-                          },
-                        ),
+                        Text(_userName,
+                          style: const TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold, fontSize: 16)),
+                        const Text('Selamat datang',
+                          style: TextStyle(color: Colors.white70, fontSize: 12)),
                       ],
+                    ),
+                  ),
+
+                  // ── BELL NOTIFIKASI ──
+                  Stack(
+                    clipBehavior: Clip.none,
+                    children: [
+                      IconButton(
+                        onPressed: () => Navigator.push(
+                          context,
+                          MaterialPageRoute(builder: (_) => const NotificationScreen()),
+                        ),
+                        icon: const Icon(
+                          Icons.notifications_outlined,
+                          color: Colors.white,
+                          size : 28,
+                        ),
+                      ),
+                      Positioned(
+                        right: 6,
+                        top  : 6,
+                        child: Container(
+                          width : 16,
+                          height: 16,
+                          decoration: BoxDecoration(
+                            color : Colors.amber,
+                            shape : BoxShape.circle,
+                            border: Border.all(color: pinkSoft, width: 1.5),
+                          ),
+                          child: const Center(
+                            child: Text('2',
+                              style: TextStyle(
+                                color: Colors.white, fontSize: 9, fontWeight: FontWeight.bold,
+                              )),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+
+              const SizedBox(height: 16),
+
+              Container(
+                padding   : const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                decoration: BoxDecoration(
+                  color       : Colors.white,
+                  borderRadius: BorderRadius.circular(30),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.search, color: Colors.grey),
+                    const SizedBox(width: 8),
+                    const Expanded(
+                      child: Text('Cari impian make up mu disini..',
+                        style: TextStyle(color: Colors.grey)),
+                    ),
+                    GestureDetector(
+                      onTap: () => setState(() => _currentIndex = 2),
+                      child: Container(
+                        padding   : const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color       : pinkSoft,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.camera_alt, color: Colors.white, size: 18),
+                      ),
                     ),
                   ],
                 ),
               ),
-            ),
+            ],
+          ),
+        ),
 
-            // ── Error ─────────────────────────────────────────────
-            if (_errorMessage != null)
-              SliverToBoxAdapter(
-                child: Container(
-                  margin : const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color       : Colors.red[50],
-                    borderRadius: BorderRadius.circular(12),
-                    border      : Border.all(color: Colors.red[200]!),
-                  ),
+        Expanded(
+          child: _isLoading
+              ? const Center(child: CircularProgressIndicator(color: pinkSoft))
+              : _muas.isEmpty
+                  ? const Center(child: Text('Belum ada MUA tersedia'))
+                  : RefreshIndicator(
+                      color    : pinkSoft,
+                      onRefresh: _loadData,
+                      child    : ListView.builder(
+                        padding    : const EdgeInsets.all(16),
+                        itemCount  : _muas.length,
+                        itemBuilder: (_, i) => _buildMuaCard(_muas[i]),
+                      ),
+                    ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildMuaCard(dynamic mua) {
+    return Container(
+      margin    : const EdgeInsets.only(bottom: 20),
+      decoration: BoxDecoration(
+        color       : Colors.white,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow   : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.06),
+            blurRadius: 10, offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child  : Row(
+              children: [
+                CircleAvatar(
+                  radius         : 22,
+                  backgroundColor: pinkSoft,
+                  backgroundImage: mua['avatar'] != null ? NetworkImage(mua['avatar']) : null,
+                  child: mua['avatar'] == null ? const Icon(Icons.person, color: Colors.white) : null,
+                ),
+                const SizedBox(width: 10),
+                Expanded(
                   child: Column(
-                    children: [
-                      const Icon(Icons.wifi_off, color: Colors.red, size: 40),
-                      const SizedBox(height: 8),
-                      Text(
-                        _errorMessage!,
-                        textAlign: TextAlign.center,
-                        style    : const TextStyle(color: Colors.red),
-                      ),
-                      const SizedBox(height: 8),
-                      ElevatedButton(
-                        onPressed: () => _loadMuas(refresh: true),
-                        child    : const Text('Coba Lagi'),
-                      ),
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children          : [
+                      Text((mua['name'] ?? '').toString().toUpperCase(),
+                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13)),
+                      Row(children: [
+                        const Icon(Icons.location_on, size: 12, color: pinkSoft),
+                        const SizedBox(width: 2),
+                        Text(mua['location'] ?? 'Indonesia',
+                          style: const TextStyle(fontSize: 11, color: Colors.grey)),
+                      ]),
                     ],
                   ),
                 ),
-              ),
-
-            // ── List MUA ─────────────────────────────────────────
-            SliverPadding(
-              padding: const EdgeInsets.all(16),
-              sliver : SliverList(
-                delegate: SliverChildBuilderDelegate(
-                  (context, index) {
-                    if (index < _muas.length) {
-                      return _MuaCard(
-                        mua    : _muas[index],
-                        onTap  : () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => DetailMuaScreen(muaId: _muas[index].id),
-                          ),
-                        ),
-                      );
-                    }
-
-                    // Load more button
-                    if (_hasMore && !_isLoading) {
-                      return Padding(
-                        padding: const EdgeInsets.symmetric(vertical: 16),
-                        child  : Center(
-                          child: OutlinedButton(
-                            onPressed: () {
-                              setState(() => _currentPage++);
-                              _loadMuas();
-                            },
-                            child: const Text('Muat Lebih Banyak'),
-                          ),
-                        ),
-                      );
-                    }
-
-                    return null;
-                  },
-                  childCount: _muas.length + (_hasMore ? 1 : 0),
+                ElevatedButton(
+                  onPressed: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => DetailMuaScreen(muaId: mua['id']))),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: pinkSoft,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                  ),
+                  child: const Text('Lihat Profil',
+                    style: TextStyle(color: Colors.white, fontSize: 12)),
                 ),
-              ),
+              ],
             ),
+          ),
 
-            // ── Loading indicator ─────────────────────────────────
-            if (_isLoading)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child  : Center(
-                    child: CircularProgressIndicator(color: Color(0xFFE91E8C)),
-                  ),
-                ),
+          if (mua['sample_portfolios'] != null &&
+              (mua['sample_portfolios'] as List).isNotEmpty)
+            ClipRRect(
+              child: Image.network(
+                mua['sample_portfolios'][0]['image_url'],
+                height: 220, width: double.infinity, fit: BoxFit.cover,
+                errorBuilder: (_, __, ___) => _placeholderImage(),
               ),
+            )
+          else
+            _placeholderImage(),
 
-            // ── Empty state ───────────────────────────────────────
-            if (!_isLoading && _muas.isEmpty && _errorMessage == null)
-              const SliverToBoxAdapter(
-                child: Padding(
-                  padding: EdgeInsets.all(32),
-                  child  : Center(
-                    child: Column(
-                      children: [
-                        Icon(Icons.search_off, size: 60, color: Colors.grey),
-                        SizedBox(height: 8),
-                        Text(
-                          'Belum ada MUA tersedia',
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ],
-                    ),
-                  ),
+          Padding(
+            padding: const EdgeInsets.all(12),
+            child  : Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children          : [
+                Row(children: [
+                  Text(mua['name'] ?? '',
+                    style: const TextStyle(
+                      color: pinkSoft, fontWeight: FontWeight.bold, fontSize: 15)),
+                  const Spacer(),
+                  const Icon(Icons.favorite_border, size: 18, color: Colors.grey),
+                  const SizedBox(width: 4),
+                  Text('${mua['total_reviews'] ?? 0}',
+                    style: const TextStyle(fontSize: 12, color: Colors.grey)),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.chat_bubble_outline, size: 18, color: Colors.grey),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.share_outlined, size: 18, color: Colors.grey),
+                ]),
+                const SizedBox(height: 4),
+                Text(mua['bio'] ?? 'Makeup Artist profesional',
+                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                  maxLines: 2, overflow: TextOverflow.ellipsis),
+                GestureDetector(
+                  onTap: () => Navigator.push(context,
+                    MaterialPageRoute(builder: (_) => DetailMuaScreen(muaId: mua['id']))),
+                  child: const Text('Selengkapnya..',
+                    style: TextStyle(
+                      color: pinkSoft, fontSize: 13, decoration: TextDecoration.underline)),
                 ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _placeholderImage() {
+    return Container(
+      height: 220, color: Colors.grey.shade200,
+      child : const Center(child: Icon(Icons.face_retouching_natural, size: 60, color: Colors.grey)),
+    );
+  }
+
+  Widget _buildProfil() {
+    return SafeArea(
+      child: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            const CircleAvatar(
+              radius: 50, backgroundColor: pinkSoft,
+              child : Icon(Icons.person, size: 50, color: Colors.white),
+            ),
+            const SizedBox(height: 16),
+            Text(_userName, style: const TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+            const SizedBox(height: 24),
+            ElevatedButton(
+              onPressed: () async {
+                await ApiService.logout();
+                if (!mounted) return;
+                Navigator.pushReplacementNamed(context, '/');
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: pinkSoft,
+                shape  : RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+                padding: const EdgeInsets.symmetric(horizontal: 32, vertical: 12),
               ),
+              child: const Text('Keluar', style: TextStyle(color: Colors.white)),
+            ),
           ],
         ),
       ),
     );
   }
-}
 
-// ─── Widget: Sort Chip ─────────────────────────────────────────────
-class _SortChip extends StatelessWidget {
-  final String   label;
-  final String   value;
-  final bool     selected;
-  final VoidCallback onTap;
+  Widget _buildBottomNav() {
+    return Container(
+      margin   : const EdgeInsets.only(bottom: 16, left: 20, right: 20),
+      padding  : const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+      decoration: BoxDecoration(
+        color       : Colors.white.withValues(alpha: 0.9),
+        borderRadius: BorderRadius.circular(40),
+        boxShadow   : [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.1),
+            blurRadius: 20, offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceAround,
+        children         : [
+          _navItem('assets/icons/home.png',       'Home',    0),
+          _navItem('assets/icons/booking.png',    'Booking', 1),
+          _navItemCenter(),
+          _navItem('assets/icons/notifikasi.png', 'Chatbot', 3),
+          _navItem('assets/icons/profil.png',     'Profil',  4),
+        ],
+      ),
+    );
+  }
 
-  const _SortChip({
-    required this.label,
-    required this.value,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
+  Widget _navItem(String iconPath, String label, int index) {
+    final isActive = _currentIndex == index;
     return GestureDetector(
-      onTap  : onTap,
-      child  : Container(
-        padding   : const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-        decoration: BoxDecoration(
-          color       : selected ? Colors.white : Colors.white24,
-          borderRadius: BorderRadius.circular(20),
-        ),
-        child: Text(
-          label,
-          style: TextStyle(
-            color     : selected ? const Color(0xFFE91E8C) : Colors.white,
-            fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            fontSize  : 12,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-// ─── Widget: MUA Card ─────────────────────────────────────────────
-class _MuaCard extends StatelessWidget {
-  final MuaModel mua;
-  final VoidCallback onTap;
-
-  const _MuaCard({required this.mua, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return Card(
-      margin       : const EdgeInsets.only(bottom: 12),
-      shape        : RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
-      elevation    : 2,
-      child        : InkWell(
-        borderRadius: BorderRadius.circular(16),
-        onTap       : onTap,
-        child       : Padding(
-          padding: const EdgeInsets.all(16),
-          child  : Row(
-            children: [
-              // ── Avatar ────────────────────────────────────────
-              CircleAvatar(
-                radius         : 36,
-                backgroundColor: const Color(0xFFE91E8C).withValues(alpha: 0.1),
-                backgroundImage: mua.avatar != null
-                    ? NetworkImage(mua.avatar!)
-                    : null,
-                child          : mua.avatar == null
-                    ? const Icon(Icons.person, size: 36, color: Color(0xFFE91E8C))
-                    : null,
-              ),
-              const SizedBox(width: 12),
-
-              // ── Info ──────────────────────────────────────────
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children          : [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            mua.name,
-                            style: const TextStyle(
-                              fontSize  : 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                            overflow: TextOverflow.ellipsis,
-                          ),
-                        ),
-                        if (mua.isVerified)
-                          const Icon(Icons.verified, color: Colors.blue, size: 16),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    if (mua.location != null)
-                      Row(
-                        children: [
-                          const Icon(Icons.location_on, size: 12, color: Colors.grey),
-                          const SizedBox(width: 2),
-                          Text(
-                            mua.location!,
-                            style: const TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                        ],
-                      ),
-                    const SizedBox(height: 4),
-                    Row(
-                      children: [
-                        const Icon(Icons.star, size: 14, color: Colors.amber),
-                        const SizedBox(width: 2),
-                        Text(
-                          mua.rating.toStringAsFixed(1),
-                          style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          '(${mua.totalReviews} ulasan)',
-                          style: const TextStyle(color: Colors.grey, fontSize: 12),
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 4),
-                    // Harga mulai dari layanan pertama
-                    if (mua.services.isNotEmpty)
-                      Text(
-                        'Mulai Rp ${_formatPrice(mua.services.first.price)}',
-                        style: const TextStyle(
-                          color     : Color(0xFFE91E8C),
-                          fontWeight: FontWeight.bold,
-                          fontSize  : 13,
-                        ),
-                      ),
-                  ],
-                ),
-              ),
-
-              // ── Arrow ─────────────────────────────────────────
-              const Icon(Icons.arrow_forward_ios, size: 16, color: Colors.grey),
-            ],
-          ),
-        ),
+      onTap: () => setState(() => _currentIndex = index),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children    : [
+          Image.asset(iconPath, width: 24, height: 24,
+            color: isActive ? pinkSoft : Colors.grey),
+          const SizedBox(height: 2),
+          Text(label, style: TextStyle(
+            fontSize: 10, color: isActive ? pinkSoft : Colors.grey)),
+        ],
       ),
     );
   }
 
-  String _formatPrice(double price) {
-    // Format angka dengan titik ribuan
-    return price.toInt().toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
+  Widget _navItemCenter() {
+    return GestureDetector(
+      onTap: () => setState(() => _currentIndex = 2),
+      child: Container(
+        padding   : const EdgeInsets.all(14),
+        decoration: const BoxDecoration(color: pinkSoft, shape: BoxShape.circle),
+        child     : const Icon(Icons.search, color: Colors.white, size: 26),
+      ),
     );
   }
 }

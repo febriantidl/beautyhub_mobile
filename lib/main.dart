@@ -17,7 +17,7 @@ class BeautyHubApp extends StatelessWidget {
       debugShowCheckedModeBanner: false,
       theme: ThemeData(
         colorScheme: ColorScheme.fromSeed(
-          seedColor: const Color(0xFFCC2244),
+          seedColor: const Color(0XFFCF4C4C),
         ),
         useMaterial3: true,
         fontFamily: 'Roboto',
@@ -63,7 +63,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFCC2244),
+      backgroundColor: const Color(0XFFCF4C4C),
       body: Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -78,7 +78,7 @@ class _SplashScreenState extends State<SplashScreen> {
               child: const Icon(
                 Icons.face_retouching_natural,
                 size: 64,
-                color: Color(0xFFCC2244),
+                color: Color(0xFFCF4C4C),
               ),
             ),
             const SizedBox(height: 24),

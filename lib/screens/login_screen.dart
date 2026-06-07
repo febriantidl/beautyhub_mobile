@@ -123,7 +123,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: InputDecoration(
                       hintText: 'Masukkan email kamu',
                       prefixIcon: const Icon(Icons.email_outlined,
-                          color: Color(0xFFCC2244)),
+                          color: Color(0xFFCF4C4C)),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(12),
                         borderSide: BorderSide(color: Colors.grey.shade300),
@@ -146,7 +146,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     decoration: InputDecoration(
                       hintText: 'Masukkan password kamu',
                       prefixIcon: const Icon(Icons.lock_outline,
-                          color: Color(0xFFCC2244)),
+                          color: Color(0xFFCF4C4C)),
                       suffixIcon: IconButton(
                         icon: Icon(_obscurePassword
                             ? Icons.visibility_off
@@ -171,7 +171,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: TextButton(
                       onPressed: () {},
                       child: const Text('Lupa Password?',
-                          style: TextStyle(color: Color(0xFFCC2244))),
+                          style: TextStyle(color: Color(0xFFCF4C4C))),
                     ),
                   ),
 
@@ -197,7 +197,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     child: ElevatedButton(
                       onPressed: _isLoading ? null : _login,
                       style: ElevatedButton.styleFrom(
-                        backgroundColor: const Color(0xFFCC2244),
+                        backgroundColor: const Color(0xFFCF4C4C),
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(30),
                         ),
@@ -232,7 +232,7 @@ class _LoginScreenState extends State<LoginScreen> {
                             TextSpan(
                               text: 'Daftar Sekarang',
                               style: TextStyle(
-                                color: Color(0xFFCC2244),
+                                color: Color(0xFFCF4C4C),
                                 fontWeight: FontWeight.bold,
                               ),
                             ),
