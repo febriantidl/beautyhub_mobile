@@ -8,7 +8,7 @@ class ApiService {
   // Android Emulator  → 10.0.2.2
   // iOS Simulator     → localhost
   // HP Fisik          → IP komputer kamu, contoh: 192.168.1.5
-  static const String baseUrl = 'http://10.0.2.2:8000/api';
+  static const String baseUrl = 'http://127.0.0.1:8000/api';
 
   // ─── Key SharedPreferences ────────────────────────────────────────
   static const String _tokenKey = 'access_token';
