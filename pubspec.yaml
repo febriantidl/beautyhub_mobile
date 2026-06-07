@@ -1,5 +1,5 @@
 name: beautyhub_mobile
-description: BeautyHub Mobile App — Flutter client untuk Laravel API
+description: BeautyHub Mobile App
 publish_to: 'none'
 version: 1.0.0+1
 
@@ -9,28 +9,10 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
-<<<<<<< HEAD
-  # HTTP client untuk call API Laravel
-  http: ^1.2.0
-
-  # Simpan token login (SharedPreferences)
-  shared_preferences: ^2.2.2
-
-  # Pilih gambar dari galeri/kamera (untuk Search by Image)
-  image_picker: ^1.0.7
-
-  # Icon material
-  cupertino_icons: ^1.0.6
-=======
   http: ^1.2.0
   shared_preferences: ^2.5.5
   image_picker: ^1.2.2
-
-  # The following adds the Cupertino Icons font to your application.
-  # Use with the CupertinoIcons class for iOS style icons.
   cupertino_icons: ^1.0.8
->>>>>>> ad9df91efd35f8809be12c6531f7815023f8abbd
 
 dev_dependencies:
   flutter_test:
@@ -39,6 +21,3 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
-  # Kalau nanti ada assets (gambar lokal, font), tambah di sini
-  # assets:
-  #   - assets/images/
