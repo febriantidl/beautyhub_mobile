@@ -10,6 +10,7 @@ dependencies:
   flutter:
     sdk: flutter
 
+<<<<<<< HEAD
   # HTTP client untuk call API Laravel
   http: ^1.2.0
 
@@ -21,6 +22,15 @@ dependencies:
 
   # Icon material
   cupertino_icons: ^1.0.6
+=======
+  http: ^1.2.0
+  shared_preferences: ^2.5.5
+  image_picker: ^1.2.2
+
+  # The following adds the Cupertino Icons font to your application.
+  # Use with the CupertinoIcons class for iOS style icons.
+  cupertino_icons: ^1.0.8
+>>>>>>> ad9df91efd35f8809be12c6531f7815023f8abbd
 
 dev_dependencies:
   flutter_test:
