@@ -1,9 +1,5 @@
-name: beautyhub_mobile
-<<<<<<< HEAD
-description: BeautyHub Mobile App
-=======
+name: beautyhub_mobilee
 description: A new Flutter project.
->>>>>>> fa99272b14a5f642e7c73a7b4a97310e0ede15c4
 publish_to: 'none'
 
 version: 1.0.0+1
@@ -14,18 +10,11 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-<<<<<<< HEAD
-  http: ^1.2.0
-  shared_preferences: ^2.5.5
-  image_picker: ^1.2.2
-  cupertino_icons: ^1.0.8
-=======
 
   cupertino_icons: ^1.0.8
   http: ^1.2.0
   shared_preferences: ^2.5.3
   image_picker: ^1.1.2
->>>>>>> fa99272b14a5f642e7c73a7b4a97310e0ede15c4
 
 dev_dependencies:
   flutter_test:
@@ -35,3 +24,5 @@ dev_dependencies:
 
 flutter:
   uses-material-design: true
+  assets:
+    - assets/images/

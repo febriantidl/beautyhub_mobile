@@ -125,11 +125,7 @@ packages:
       sha256: "3105dc8492f6183fb076ccf1f351ac3d60564bff92e20bfc4af9cc1651f4e7e1"
       url: "https://pub.dev"
     source: hosted
-<<<<<<< HEAD
-    version: "3.0.2"
-=======
     version: "6.0.0"
->>>>>>> fa99272b14a5f642e7c73a7b4a97310e0ede15c4
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
