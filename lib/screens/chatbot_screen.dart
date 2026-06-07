@@ -142,7 +142,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
                       _messageCtrl.text = s;
                       _sendMessage();
                     },
-                    backgroundColor: const Color(0xFFE91E8C).withOpacity(0.1),
+                    backgroundColor: const Color(0xFFE91E8C).withValues(alpha: 0.1),
                     side           : const BorderSide(color: Color(0xFFE91E8C), width: 0.5),
                   ),
                 )).toList(),
@@ -184,7 +184,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
               color     : Colors.white,
               boxShadow : [
                 BoxShadow(
-                  color  : Colors.black.withOpacity(0.05),
+                  color  : Colors.black.withValues(alpha: 0.05),
                   blurRadius: 8,
                   offset : const Offset(0, -2),
                 ),
@@ -276,7 +276,7 @@ class _ChatBubble extends StatelessWidget {
                 ),
                 boxShadow  : [
                   BoxShadow(
-                    color     : Colors.black.withOpacity(0.05),
+                    color     : Colors.black.withValues(alpha: 0.05),
                     blurRadius: 4,
                     offset    : const Offset(0, 2),
                   ),

@@ -5,7 +5,6 @@ import 'login_screen.dart';
 import 'detail_mua_screen.dart';
 import 'chatbot_screen.dart';
 import 'image_search_screen.dart';
-import 'booking_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -380,7 +379,7 @@ class _MuaCard extends StatelessWidget {
               // ── Avatar ────────────────────────────────────────
               CircleAvatar(
                 radius         : 36,
-                backgroundColor: const Color(0xFFE91E8C).withOpacity(0.1),
+                backgroundColor: const Color(0xFFE91E8C).withValues(alpha: 0.1),
                 backgroundImage: mua.avatar != null
                     ? NetworkImage(mua.avatar!)
                     : null,

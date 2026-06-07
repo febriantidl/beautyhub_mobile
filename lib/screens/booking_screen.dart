@@ -252,7 +252,7 @@ class _BookingScreenState extends State<BookingScreen> {
                   subtitle    : Text('Rp ${_formatPrice(s.price)}'),
                   shape       : RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
                   tileColor   : _selectedService?.id == s.id
-                      ? const Color(0xFFE91E8C).withOpacity(0.05)
+                      ? const Color(0xFFE91E8C).withValues(alpha: 0.05)
                       : null,
                 )),
 
@@ -388,8 +388,8 @@ class _BookingScreenState extends State<BookingScreen> {
                 Container(
                   padding    : const EdgeInsets.all(16),
                   decoration : BoxDecoration(
-                    color       : const Color(0xFFE91E8C).withOpacity(0.05),
-                    border      : Border.all(color: const Color(0xFFE91E8C).withOpacity(0.3)),
+                    color       : const Color(0xFFE91E8C).withValues(alpha: 0.05),
+                    border      : Border.all(color: const Color(0xFFE91E8C).withValues(alpha: 0.3)),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Row(
