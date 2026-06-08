@@ -11,34 +11,52 @@ class ImageSearchScreen extends StatefulWidget {
   State<ImageSearchScreen> createState() => _ImageSearchScreenState();
 }
 
-class _ImageSearchScreenState extends State<ImageSearchScreen> {
-  File?        _selectedImage;
-  String?      _selectedCategory; // field: style_category (opsional)
-  bool         _isLoading  = false;
-  String?      _errorMessage;
-  List<dynamic> _results   = [];
-  bool         _hasSearched = false;
+class _ImageSearchScreenState extends State<ImageSearchScreen>
+    with SingleTickerProviderStateMixin {
+  File?         _selectedImage;
+  bool          _isLoading   = false;
+  String?       _errorMessage;
+  List<dynamic> _results     = [];
+  bool          _hasSearched = false;
 
   final _picker = ImagePicker();
 
-  // Kategori style yang tersedia (sesuai data portfolio di Laravel)
-  final List<String> _categories = [
-    'wedding',
-    'wisuda',
-    'natural',
-    'glam',
-    'party',
-    'editorial',
-  ];
+  static const Color maroon   = Color(0xFF4D0012);
+  static const Color pinkSoft = Color(0xFFCF4C4C);
 
-  // ─── Pilih gambar dari galeri atau kamera ─────────────────────────
+  static const LinearGradient mainGradient = LinearGradient(
+    colors: [maroon, pinkSoft],
+    begin: Alignment.topCenter,
+    end: Alignment.bottomCenter,
+  );
+
+  late AnimationController _scanCtrl;
+  late Animation<double> _scanAnim;
+
+  @override
+  void initState() {
+    super.initState();
+    _scanCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 2),
+    )..repeat(reverse: true);
+    _scanAnim = Tween<double>(begin: 0.0, end: 1.0).animate(
+      CurvedAnimation(parent: _scanCtrl, curve: Curves.easeInOut),
+    );
+  }
+
+  @override
+  void dispose() {
+    _scanCtrl.dispose();
+    super.dispose();
+  }
+
   Future<void> _pickImage(ImageSource source) async {
     final picked = await _picker.pickImage(
-      source  : source,
-      maxWidth: 1024,   // compress agar < 5MB (limit Laravel)
+      source: source,
+      maxWidth: 1024,
       imageQuality: 85,
     );
-
     if (picked != null) {
       setState(() {
         _selectedImage = File(picked.path);
@@ -49,392 +67,661 @@ class _ImageSearchScreenState extends State<ImageSearchScreen> {
     }
   }
 
-  // ─── POST /api/search/by-image ────────────────────────────────────
-  // Field: image (File, wajib), style_category (string, opsional)
   Future<void> _searchByImage() async {
-    if (_selectedImage == null) {
-      setState(() => _errorMessage = 'Pilih gambar terlebih dahulu');
-      return;
-    }
-
+    if (_selectedImage == null) return;
     setState(() {
       _isLoading    = true;
       _errorMessage = null;
       _results      = [];
     });
-
     try {
-      final result = await ApiService.searchByImage(
-        imageFile    : _selectedImage!,
-        styleCategory: _selectedCategory, // bisa null
-      );
-
+      final result = await ApiService.searchByImage(imageFile: _selectedImage!);
       if (!mounted) return;
-
       if (result['success'] == true) {
         setState(() {
           _results     = result['data'] as List;
           _hasSearched = true;
         });
       } else {
-        setState(() => _errorMessage = 'Pencarian gagal. Coba lagi.');
+        setState(() => _errorMessage = 'Analisis gagal. Coba lagi.');
       }
-    } catch (e) {
+    } catch (_) {
       setState(() => _errorMessage = 'Tidak bisa terhubung ke server');
     } finally {
       if (mounted) setState(() => _isLoading = false);
     }
   }
 
-  void _showImageSourceSheet() {
-    showModalBottomSheet(
-      context: context,
-      shape  : const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      builder: (_) => SafeArea(
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children    : [
-            const Padding(
-              padding: EdgeInsets.all(16),
-              child  : Text(
-                'Pilih Gambar Referensi',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-            ),
-            ListTile(
-              leading  : const Icon(Icons.photo_library, color: Color(0xFFE91E8C)),
-              title    : const Text('Dari Galeri'),
-              onTap    : () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.gallery);
-              },
-            ),
-            ListTile(
-              leading  : const Icon(Icons.camera_alt, color: Color(0xFFE91E8C)),
-              title    : const Text('Ambil Foto'),
-              onTap    : () {
-                Navigator.pop(context);
-                _pickImage(ImageSource.camera);
-              },
-            ),
-            const SizedBox(height: 8),
-          ],
-        ),
-      ),
-    );
-  }
-
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title          : const Text('Cari MUA by Foto'),
-        backgroundColor: const Color(0xFFE91E8C),
-        foregroundColor: Colors.white,
+      backgroundColor: maroon,
+      body: Column(
+        children: [
+          _buildHeader(),
+          Expanded(
+            child: _hasSearched ? _buildResults() : _buildMain(),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child  : Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
-          children          : [
+    );
+  }
 
-            // ── Penjelasan ────────────────────────────────────────
+  // ── HEADER ───────────────────────────────────────────────────
+  Widget _buildHeader() {
+    return SafeArea(
+      bottom: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(16, 12, 16, 0),
+        child: Row(
+          children: [
+            const Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text('Cari dengan Foto',
+                    style: TextStyle(
+                        color: Colors.white,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w800)),
+                Text('Temukan gaya makeup yang cocok untukmu',
+                    style: TextStyle(color: Colors.white60, fontSize: 12)),
+              ],
+            ),
+            const Spacer(),
             Container(
-              padding    : const EdgeInsets.all(12),
-              decoration : BoxDecoration(
-                color       : const Color(0xFFE91E8C).withValues(alpha: 0.05),
-                borderRadius: BorderRadius.circular(12),
-                border      : Border.all(color: const Color(0xFFE91E8C).withValues(alpha: 0.2)),
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+              decoration: BoxDecoration(
+                gradient: const LinearGradient(
+                  colors: [pinkSoft, Color(0xFFE8736B)],
+                ),
+                borderRadius: BorderRadius.circular(20),
               ),
               child: const Row(
                 children: [
-                  Icon(Icons.info_outline, color: Color(0xFFE91E8C)),
-                  SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      'Upload foto referensi makeup yang kamu suka, kami akan carikan MUA yang sesuai!',
-                      style: TextStyle(fontSize: 13),
-                    ),
-                  ),
+                  Icon(Icons.auto_awesome, color: Colors.white, size: 14),
+                  SizedBox(width: 4),
+                  Text('AI',
+                      style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 13)),
                 ],
               ),
             ),
-            const SizedBox(height: 20),
-
-            // ── Upload gambar ─────────────────────────────────────
-            GestureDetector(
-              onTap : _showImageSourceSheet,
-              child : Container(
-                height    : 200,
-                decoration: BoxDecoration(
-                  color       : Colors.grey[100],
-                  borderRadius: BorderRadius.circular(16),
-                  border      : Border.all(
-                    color    : const Color(0xFFE91E8C).withValues(alpha: 0.3),
-                    style    : BorderStyle.solid,
-                    width    : 2,
-                  ),
-                ),
-                child: _selectedImage != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(14),
-                        child       : Image.file(
-                          _selectedImage!,
-                          fit: BoxFit.cover,
-                          width: double.infinity,
-                        ),
-                      )
-                    : const Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children         : [
-                          Icon(Icons.add_photo_alternate_outlined, size: 60, color: Color(0xFFE91E8C)),
-                          SizedBox(height: 8),
-                          Text(
-                            'Tap untuk pilih gambar referensi',
-                            style: TextStyle(color: Colors.grey),
-                          ),
-                          SizedBox(height: 4),
-                          Text(
-                            'Maks. 5MB',
-                            style: TextStyle(color: Colors.grey, fontSize: 12),
-                          ),
-                        ],
-                      ),
-              ),
-            ),
-
-            if (_selectedImage != null) ...[
-              const SizedBox(height: 8),
-              TextButton.icon(
-                onPressed: _showImageSourceSheet,
-                icon     : const Icon(Icons.refresh),
-                label    : const Text('Ganti Gambar'),
-                style    : TextButton.styleFrom(foregroundColor: const Color(0xFFE91E8C)),
-              ),
-            ],
-
-            const SizedBox(height: 20),
-
-            // ── Filter kategori (opsional) ─────────────────────────
-            // field: style_category
-            const Text(
-              'Kategori Style (opsional)',
-              style: TextStyle(fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 8),
-            Wrap(
-              spacing  : 8,
-              runSpacing: 4,
-              children : [
-                ChoiceChip(
-                  label    : const Text('Semua'),
-                  selected : _selectedCategory == null,
-                  onSelected: (_) => setState(() => _selectedCategory = null),
-                  selectedColor: const Color(0xFFE91E8C),
-                  labelStyle: TextStyle(
-                    color: _selectedCategory == null ? Colors.white : Colors.black,
-                  ),
-                ),
-                ..._categories.map((cat) => ChoiceChip(
-                  label    : Text(cat[0].toUpperCase() + cat.substring(1)),
-                  selected : _selectedCategory == cat,
-                  onSelected: (_) => setState(() => _selectedCategory = cat),
-                  selectedColor: const Color(0xFFE91E8C),
-                  labelStyle: TextStyle(
-                    color: _selectedCategory == cat ? Colors.white : Colors.black,
-                  ),
-                )),
-              ],
-            ),
-
-            const SizedBox(height: 20),
-
-            // ── Error message ──────────────────────────────────────
-            if (_errorMessage != null) ...[
-              Container(
-                padding    : const EdgeInsets.all(12),
-                decoration : BoxDecoration(
-                  color       : Colors.red[50],
-                  borderRadius: BorderRadius.circular(8),
-                  border      : Border.all(color: Colors.red[200]!),
-                ),
-                child: Text(_errorMessage!, style: const TextStyle(color: Colors.red)),
-              ),
-              const SizedBox(height: 12),
-            ],
-
-            // ── Tombol Cari ────────────────────────────────────────
-            ElevatedButton.icon(
-              onPressed: _isLoading ? null : _searchByImage,
-              icon     : const Icon(Icons.search),
-              label    : const Text(
-                'Cari MUA',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              ),
-              style    : ElevatedButton.styleFrom(
-                backgroundColor: const Color(0xFFE91E8C),
-                foregroundColor: Colors.white,
-                padding        : const EdgeInsets.symmetric(vertical: 14),
-                shape          : RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-            ),
-
-            const SizedBox(height: 24),
-
-            // ── Loading ────────────────────────────────────────────
-            if (_isLoading)
-              const Center(
-                child: Column(
-                  children: [
-                    CircularProgressIndicator(color: Color(0xFFE91E8C)),
-                    SizedBox(height: 8),
-                    Text('Mencari MUA yang cocok...', style: TextStyle(color: Colors.grey)),
-                  ],
-                ),
-              ),
-
-            // ── Hasil ─────────────────────────────────────────────
-            if (_hasSearched && _results.isNotEmpty) ...[
-              Text(
-                '${_results.length} MUA ditemukan',
-                style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-              ),
-              const SizedBox(height: 12),
-              ..._results.map((m) => _SearchResultCard(data: m)),
-            ],
-
-            if (_hasSearched && _results.isEmpty && !_isLoading)
-              const Center(
-                child: Column(
-                  children: [
-                    Icon(Icons.search_off, size: 60, color: Colors.grey),
-                    SizedBox(height: 8),
-                    Text('Tidak ada MUA yang cocok', style: TextStyle(color: Colors.grey)),
-                  ],
-                ),
-              ),
           ],
         ),
       ),
     );
   }
-}
 
-// ─── Kartu hasil pencarian ─────────────────────────────────────────
-class _SearchResultCard extends StatelessWidget {
-  final Map<String, dynamic> data;
-  const _SearchResultCard({required this.data});
+  // ── MAIN (belum ada foto / sudah pilih foto) ─────────────────
+  Widget _buildMain() {
+    return SingleChildScrollView(
+      child: Column(
+        children: [
+          const SizedBox(height: 24),
 
-  @override
-  Widget build(BuildContext context) {
-    // data mengikuti response JSON Laravel SearchApiController
-    final name          = data['name'] ?? '';
-    final avatar        = data['avatar'];
-    final location      = data['location'] ?? '';
-    final rating        = (data['rating'] as num?)?.toDouble() ?? 0;
-    final totalReviews  = data['total_reviews'] ?? 0;
-    final isVerified    = data['is_verified'] ?? false;
-    final services      = data['services'] as List? ?? [];
-    final samplePortfolios = data['sample_portfolios'] as List? ?? [];
-    final id            = data['id'];
+          // ── Area foto / placeholder ──
+          if (_selectedImage == null) _buildPlaceholder(),
+          if (_selectedImage != null) _buildImagePreview(),
 
-    return Card(
-      margin     : const EdgeInsets.only(bottom: 12),
-      shape      : RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-      elevation  : 2,
-      child      : InkWell(
+          const SizedBox(height: 24),
+
+          // ── Tips atau tombol analisis ──
+          if (_selectedImage == null) _buildTips(),
+          if (_selectedImage != null) _buildAnalyzeSection(),
+
+          const SizedBox(height: 24),
+
+          // ── Tombol bawah ──
+          _buildBottomButtons(),
+
+          const SizedBox(height: 32),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildPlaceholder() {
+    return Column(
+      children: [
+        // Lingkaran logo animasi
+        Container(
+          width: 160,
+          height: 160,
+          decoration: BoxDecoration(
+            shape: BoxShape.circle,
+            border: Border.all(color: pinkSoft.withValues(alpha: 0.4), width: 2),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(12),
+            child: Container(
+              decoration: const BoxDecoration(
+                shape: BoxShape.circle,
+                gradient: mainGradient,
+              ),
+              child: const Center(
+                child: Icon(Icons.face_retouching_natural,
+                    size: 72, color: Colors.white),
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 28),
+        const Text('Foto Wajahmu',
+            style: TextStyle(
+                color: Colors.white,
+                fontSize: 26,
+                fontWeight: FontWeight.w900)),
+        const SizedBox(height: 10),
+        const Padding(
+          padding: EdgeInsets.symmetric(horizontal: 40),
+          child: Text(
+            'AI kami akan menganalisis portofolio MUA\ndan merekomendasikan yang paling cocok untukmu',
+            textAlign: TextAlign.center,
+            style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.5),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildImagePreview() {
+    return Stack(
+      alignment: Alignment.center,
+      children: [
+        // Corner brackets
+        SizedBox(
+          width: 260,
+          height: 300,
+          child: CustomPaint(painter: _CornerPainter()),
+        ),
+        // Foto
+        ClipRRect(
+          borderRadius: BorderRadius.circular(16),
+          child: Image.file(
+            _selectedImage!,
+            width: 240,
+            height: 280,
+            fit: BoxFit.cover,
+          ),
+        ),
+        // Scan line animasi
+        if (_isLoading)
+          Positioned(
+            child: SizedBox(
+              width: 240,
+              height: 280,
+              child: AnimatedBuilder(
+                animation: _scanAnim,
+                builder: (_, __) => Stack(
+                  children: [
+                    Positioned(
+                      top: 280 * _scanAnim.value,
+                      left: 0,
+                      right: 0,
+                      child: Container(
+                        height: 2,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: [
+                              Colors.transparent,
+                              pinkSoft.withValues(alpha: 0.8),
+                              Colors.transparent,
+                            ],
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        // X button
+        Positioned(
+          top: 10,
+          right: 10,
+          child: GestureDetector(
+            onTap: () => setState(() {
+              _selectedImage = null;
+              _results       = [];
+              _hasSearched   = false;
+            }),
+            child: Container(
+              padding: const EdgeInsets.all(4),
+              decoration: BoxDecoration(
+                color: Colors.black54,
+                shape: BoxShape.circle,
+                border: Border.all(color: Colors.white38),
+              ),
+              child: const Icon(Icons.close, color: Colors.white, size: 16),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildTips() {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 20),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
         borderRadius: BorderRadius.circular(16),
-        onTap       : () => Navigator.push(
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text('Tips Foto Terbaik',
+              style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.bold,
+                  fontSize: 14)),
+          const SizedBox(height: 10),
+          _tipRow('💡', 'Gunakan pencahayaan yang terang'),
+          const SizedBox(height: 6),
+          _tipRow('🎯', 'Pastikan wajah terlihat jelas & penuh'),
+          const SizedBox(height: 6),
+          _tipRow('📸', 'Hindari foto yang buram atau terlalu gelap'),
+        ],
+      ),
+    );
+  }
+
+  Widget _tipRow(String emoji, String text) => Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 14)),
+          const SizedBox(width: 10),
+          Text(text,
+              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+        ],
+      );
+
+  Widget _buildAnalyzeSection() {
+    return Column(
+      children: [
+        // Status
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 8,
+              height: 8,
+              decoration: const BoxDecoration(
+                color: Color(0xFF4CAF50),
+                shape: BoxShape.circle,
+              ),
+            ),
+            const SizedBox(width: 6),
+            const Text('Foto siap dianalisis',
+                style: TextStyle(color: Colors.white70, fontSize: 13)),
+          ],
+        ),
+        const SizedBox(height: 16),
+
+        if (_errorMessage != null)
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 20),
+            child: Text(_errorMessage!,
+                textAlign: TextAlign.center,
+                style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
+          ),
+
+        const SizedBox(height: 12),
+
+        // Tombol analisis
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 20),
+          child: SizedBox(
+            width: double.infinity,
+            height: 52,
+            child: _isLoading
+                ? Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [maroon, pinkSoft],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                    ),
+                    child: const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                              color: Colors.white, strokeWidth: 2),
+                        ),
+                        SizedBox(width: 12),
+                        Text('Menganalisis...',
+                            style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 15)),
+                      ],
+                    ),
+                  )
+                : DecoratedBox(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [maroon, pinkSoft],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(30),
+                      boxShadow: const [
+                        BoxShadow(
+                            color: Color(0x884D0012),
+                            blurRadius: 14,
+                            offset: Offset(0, 5)),
+                      ],
+                    ),
+                    child: ElevatedButton.icon(
+                      onPressed: _searchByImage,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        shadowColor: Colors.transparent,
+                        shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(30)),
+                      ),
+                      icon: const Icon(Icons.auto_awesome,
+                          color: Colors.white, size: 18),
+                      label: const Text('Analisis Makeup yang Cocok',
+                          style: TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 15)),
+                    ),
+                  ),
+          ),
+        ),
+
+        const SizedBox(height: 10),
+        GestureDetector(
+          onTap: () => setState(() {
+            _selectedImage = null;
+            _results       = [];
+            _hasSearched   = false;
+          }),
+          child: const Text('Ganti Foto',
+              style: TextStyle(
+                  color: Colors.white60,
+                  fontSize: 13,
+                  decoration: TextDecoration.underline,
+                  decorationColor: Colors.white60)),
+        ),
+      ],
+    );
+  }
+
+  // ── Tombol Galeri & Kamera ────────────────────────────────────
+  Widget _buildBottomButtons() {
+    if (_selectedImage != null) return const SizedBox.shrink();
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 20),
+      child: Row(
+        children: [
+          // Galeri
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _pickImage(ImageSource.gallery),
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white.withValues(alpha: 0.12),
+                  borderRadius: BorderRadius.circular(30),
+                  border: Border.all(color: Colors.white24),
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.photo_library_rounded,
+                        color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text('Galeri',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          // Ambil Foto
+          Expanded(
+            child: GestureDetector(
+              onTap: () => _pickImage(ImageSource.camera),
+              child: Container(
+                height: 52,
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(
+                    colors: [maroon, pinkSoft],
+                    begin: Alignment.topCenter,
+                    end: Alignment.bottomCenter,
+                  ),
+                  borderRadius: BorderRadius.circular(30),
+                  boxShadow: const [
+                    BoxShadow(
+                        color: Color(0x884D0012),
+                        blurRadius: 12,
+                        offset: Offset(0, 4)),
+                  ],
+                ),
+                child: const Row(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    Icon(Icons.camera_alt_rounded,
+                        color: Colors.white, size: 20),
+                    SizedBox(width: 8),
+                    Text('Ambil Foto',
+                        style: TextStyle(
+                            color: Colors.white,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 15)),
+                  ],
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // ── HASIL ────────────────────────────────────────────────────
+  Widget _buildResults() {
+    return Column(
+      children: [
+        // Sub header hasil
+        Padding(
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          child: Row(
+            children: [
+              Expanded(
+                child: Text(
+                  '${_results.length} MUA cocok ditemukan',
+                  style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 15),
+                ),
+              ),
+              GestureDetector(
+                onTap: () => setState(() {
+                  _hasSearched   = false;
+                  _selectedImage = null;
+                  _results       = [];
+                }),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 12, vertical: 6),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withValues(alpha: 0.12),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text('Cari Lagi',
+                      style: TextStyle(
+                          color: Colors.white70, fontSize: 12)),
+                ),
+              ),
+            ],
+          ),
+        ),
+        Expanded(
+          child: ListView.builder(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
+            itemCount: _results.length,
+            itemBuilder: (_, i) => _buildResultCard(_results[i]),
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildResultCard(dynamic mua) {
+    final name      = mua['name'] ?? '';
+    final avatar    = mua['avatar'];
+    final location  = mua['location'] ?? '';
+    final rating    = (mua['rating'] as num?)?.toDouble() ?? 0;
+    final reviews   = mua['total_reviews'] ?? 0;
+    final verified  = mua['is_verified'] ?? false;
+    final services  = mua['services'] as List? ?? [];
+    final portfolios = mua['sample_portfolios'] as List? ?? [];
+    final id        = mua['id'];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.07),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(18),
+        onTap: () => Navigator.push(
           context,
           MaterialPageRoute(builder: (_) => DetailMuaScreen(muaId: id)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          children          : [
-            // Sample portfolio images (horizontal scroll)
-            if (samplePortfolios.isNotEmpty)
+          children: [
+            // Portofolio scroll
+            if (portfolios.isNotEmpty)
               SizedBox(
-                height : 100,
-                child  : ListView.builder(
+                height: 100,
+                child: ListView.builder(
                   scrollDirection: Axis.horizontal,
-                  padding        : const EdgeInsets.all(8),
-                  itemCount      : samplePortfolios.length,
-                  itemBuilder    : (_, i) {
-                    final imgUrl = samplePortfolios[i]['image_url'];
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 8),
-                      child  : ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child       : Image.network(
-                          imgUrl,
-                          width      : 80,
-                          height     : 80,
-                          fit        : BoxFit.cover,
-                          errorBuilder: (_, __, ___) => Container(
-                            width: 80, height: 80,
-                            color: Colors.grey[200],
-                            child: const Icon(Icons.broken_image, color: Colors.grey),
-                          ),
+                  padding: const EdgeInsets.fromLTRB(12, 10, 12, 0),
+                  itemCount: portfolios.length,
+                  itemBuilder: (_, i) => Padding(
+                    padding: const EdgeInsets.only(right: 8),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(10),
+                      child: Image.network(
+                        portfolios[i]['image_url'],
+                        width: 85,
+                        height: 90,
+                        fit: BoxFit.cover,
+                        errorBuilder: (_, __, ___) => Container(
+                          width: 85,
+                          height: 90,
+                          color: Colors.white10,
+                          child: const Icon(Icons.image,
+                              color: Colors.white38),
                         ),
                       ),
-                    );
-                  },
+                    ),
+                  ),
                 ),
               ),
-
             Padding(
-              padding: const EdgeInsets.all(12),
-              child  : Row(
+              padding: const EdgeInsets.all(14),
+              child: Row(
                 children: [
-                  CircleAvatar(
-                    radius         : 28,
-                    backgroundImage: avatar != null ? NetworkImage(avatar) : null,
-                    backgroundColor: const Color(0xFFE91E8C).withValues(alpha: 0.1),
-                    child          : avatar == null
-                        ? const Icon(Icons.person, color: Color(0xFFE91E8C))
-                        : null,
+                  // Avatar
+                  Container(
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      gradient: const LinearGradient(
+                        colors: [maroon, pinkSoft],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                    ),
+                    child: CircleAvatar(
+                      radius: 26,
+                      backgroundColor: Colors.transparent,
+                      backgroundImage:
+                          avatar != null ? NetworkImage(avatar) : null,
+                      child: avatar == null
+                          ? const Icon(Icons.person,
+                              color: Colors.white, size: 26)
+                          : null,
+                    ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children          : [
-                        Row(
-                          children: [
-                            Text(name, style: const TextStyle(fontWeight: FontWeight.bold)),
-                            if (isVerified) ...[
-                              const SizedBox(width: 4),
-                              const Icon(Icons.verified, color: Colors.blue, size: 14),
-                            ],
+                      children: [
+                        Row(children: [
+                          Text(name,
+                              style: const TextStyle(
+                                  color: Colors.white,
+                                  fontWeight: FontWeight.w800,
+                                  fontSize: 14)),
+                          if (verified) ...[
+                            const SizedBox(width: 4),
+                            const Icon(Icons.verified,
+                                color: Colors.lightBlueAccent, size: 14),
                           ],
-                        ),
-                        Text(location, style: const TextStyle(color: Colors.grey, fontSize: 13)),
-                        Row(
-                          children: [
-                            const Icon(Icons.star, size: 14, color: Colors.amber),
-                            Text(
-                              ' $rating ($totalReviews ulasan)',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                          ],
-                        ),
+                        ]),
+                        Row(children: [
+                          const Icon(Icons.location_on_rounded,
+                              size: 12, color: pinkSoft),
+                          const SizedBox(width: 2),
+                          Text(location,
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 12)),
+                        ]),
+                        Row(children: [
+                          const Icon(Icons.star_rounded,
+                              size: 14, color: Colors.amber),
+                          Text(' $rating ($reviews ulasan)',
+                              style: const TextStyle(
+                                  color: Colors.white54, fontSize: 12)),
+                        ]),
                         if (services.isNotEmpty)
                           Text(
                             'Mulai Rp ${_formatPrice((services[0]['price'] as num).toDouble())}',
                             style: const TextStyle(
-                              color     : Color(0xFFE91E8C),
-                              fontSize  : 13,
-                              fontWeight: FontWeight.bold,
-                            ),
+                                color: pinkSoft,
+                                fontSize: 12,
+                                fontWeight: FontWeight.bold),
                           ),
                       ],
                     ),
                   ),
-                  const Icon(Icons.arrow_forward_ios, size: 14, color: Colors.grey),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(
+                        colors: [maroon, pinkSoft],
+                        begin: Alignment.topCenter,
+                        end: Alignment.bottomCenter,
+                      ),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: const Icon(Icons.arrow_forward_ios_rounded,
+                        size: 14, color: Colors.white),
+                  ),
                 ],
               ),
             ),
@@ -450,4 +737,41 @@ class _SearchResultCard extends StatelessWidget {
       (m) => '${m[1]}.',
     );
   }
+}
+
+// ── Painter corner bracket ────────────────────────────────────────
+class _CornerPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.white
+      ..strokeWidth = 3
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round;
+    const len = 24.0;
+    const r   = 10.0;
+
+    // Top-left
+    canvas.drawLine(const Offset(r, 0), const Offset(r + len, 0), paint);
+    canvas.drawLine(const Offset(0, r), const Offset(0, r + len), paint);
+    canvas.drawArc(const Rect.fromLTWH(0, 0, r * 2, r * 2), 3.14, 1.57, false, paint);
+
+    // Top-right
+    canvas.drawLine(Offset(size.width - r - len, 0), Offset(size.width - r, 0), paint);
+    canvas.drawLine(Offset(size.width, r), Offset(size.width, r + len), paint);
+    canvas.drawArc(Rect.fromLTWH(size.width - r * 2, 0, r * 2, r * 2), -1.57, 1.57, false, paint);
+
+    // Bottom-left
+    canvas.drawLine(Offset(0, size.height - r - len), Offset(0, size.height - r), paint);
+    canvas.drawLine(Offset(r, size.height), Offset(r + len, size.height), paint);
+    canvas.drawArc(Rect.fromLTWH(0, size.height - r * 2, r * 2, r * 2), 1.57, 1.57, false, paint);
+
+    // Bottom-right
+    canvas.drawLine(Offset(size.width, size.height - r - len), Offset(size.width, size.height - r), paint);
+    canvas.drawLine(Offset(size.width - r - len, size.height), Offset(size.width - r, size.height), paint);
+    canvas.drawArc(Rect.fromLTWH(size.width - r * 2, size.height - r * 2, r * 2, r * 2), 0, 1.57, false, paint);
+  }
+
+  @override
+  bool shouldRepaint(_) => false;
 }
