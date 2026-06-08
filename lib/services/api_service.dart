@@ -4,11 +4,7 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-<<<<<<< HEAD
-  static const String baseUrl = 'http://localhost:8000/api';
-=======
   static const String baseUrl = 'http://127.0.0.1:8000/api';
->>>>>>> 7e27890bf85e84c48c539aa5f0191fa462b1b3eb
 
   static const String _tokenKey = 'access_token';
   static const String _userKey  = 'user_data';
@@ -36,17 +32,12 @@ class ApiService {
     };
     if (withAuth) {
       final token = await getToken();
-      if (token != null) {
-        headers['Authorization'] = 'Bearer $token';
-      }
+      if (token != null) headers['Authorization'] = 'Bearer $token';
     }
     return headers;
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   // AUTH
-  // ═══════════════════════════════════════════════════════════════════
-
   static Future<Map<String, dynamic>> register({
     required String name,
     required String email,
@@ -104,10 +95,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   // MUA
-  // ═══════════════════════════════════════════════════════════════════
-
   static Future<Map<String, dynamic>> getMuas({
     String? location,
     String? style,
@@ -170,10 +158,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   // BOOKING
-  // ═══════════════════════════════════════════════════════════════════
-
   static Future<Map<String, dynamic>> createBooking({
     required int    muaId,
     required int    serviceId,
@@ -228,10 +213,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   // CHATBOT
-  // ═══════════════════════════════════════════════════════════════════
-
   static Future<Map<String, dynamic>> sendChatMessage(String message) async {
     final response = await http.post(
       Uri.parse('$baseUrl/chatbot/message'),
@@ -241,10 +223,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   // SEARCH BY IMAGE
-  // ═══════════════════════════════════════════════════════════════════
-
   static Future<Map<String, dynamic>> searchByImage({
     required File imageFile,
     String? styleCategory,
@@ -265,10 +244,7 @@ class ApiService {
     return jsonDecode(response.body);
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   // NOTIFICATIONS
-  // ═══════════════════════════════════════════════════════════════════
-
   static Future<Map<String, dynamic>> getNotifications() async {
     try {
       final response = await http.get(
@@ -281,10 +257,7 @@ class ApiService {
     }
   }
 
-  // ═══════════════════════════════════════════════════════════════════
   // HELPER
-  // ═══════════════════════════════════════════════════════════════════
-
   static Future<bool> isLoggedIn() async {
     final token = await getToken();
     return token != null && token.isNotEmpty;
