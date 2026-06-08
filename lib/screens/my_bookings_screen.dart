@@ -61,80 +61,85 @@ class _MyBookingsScreenState extends State<MyBookingsScreen> {
   }
 
   void _showQrCode(dynamic booking) {
-    final qrData =
-        'BEAUTYHUB-BOOKING-${booking['id']}-${booking['booking_code'] ?? booking['id']}';
+      final qrData = booking['verification_code'] ?? '${booking['id']}';
 
-    showModalBottomSheet(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.white,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+  showModalBottomSheet(
+    context: context,
+    isScrollControlled: true,
+    backgroundColor: Colors.white,
+    shape: const RoundedRectangleBorder(
+      borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+    ),
+    builder: (_) => SingleChildScrollView(
+      padding: EdgeInsets.only(
+        left: 32,
+        right: 32,
+        top: 32,
+        bottom: MediaQuery.of(context).viewInsets.bottom + 32,
       ),
-      builder: (_) => Padding(
-        padding: const EdgeInsets.all(32),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Container(
-              width: 40,
-              height: 4,
-              decoration: BoxDecoration(
-                color: Colors.grey.shade300,
-                borderRadius: BorderRadius.circular(2),
-              ),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Container(
+            width: 40,
+            height: 4,
+            decoration: BoxDecoration(
+              color: Colors.grey.shade300,
+              borderRadius: BorderRadius.circular(2),
             ),
-            const SizedBox(height: 24),
-            const Icon(Icons.check_circle,
-                color: Colors.green, size: 48),
-            const SizedBox(height: 8),
-            const Text(
-              'Booking Disetujui!',
-              style: TextStyle(
-                  fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 24),
+          const Icon(Icons.check_circle, color: Colors.green, size: 48),
+          const SizedBox(height: 8),
+          const Text(
+            'Booking Disetujui!',
+            style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tunjukkan QR ini ke MUA saat acara',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 24),
+          Container(
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              border: Border.all(color: const Color(0xFFCF4C4C), width: 2),
+              borderRadius: BorderRadius.circular(16),
             ),
-            const SizedBox(height: 4),
-            Text(
-              'Tunjukkan QR ini ke MUA saat acara',
-              style: TextStyle(color: Colors.grey.shade600),
+            child: QrImageView(
+              data: qrData,
+              version: QrVersions.auto,
+              size: 200,
+              backgroundColor: Colors.white,
             ),
-            const SizedBox(height: 24),
-            Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                border: Border.all(
-                    color: const Color(0xFFCF4C4C), width: 2),
-                borderRadius: BorderRadius.circular(16),
-              ),
-              child: QrImageView(
-                data: qrData,
-                version: QrVersions.auto,
-                size: 200,
-                backgroundColor: Colors.white,
-              ),
-            ),
-            const SizedBox(height: 16),
-            Text(
-              'ID Booking: #${booking['id']}',
-              style: const TextStyle(
-                  fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Tanggal: ${booking['event_date'] ?? '-'}',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              'Waktu: ${booking['time_slot'] ?? '-'}',
-              style: TextStyle(color: Colors.grey.shade600),
-            ),
-            const SizedBox(height: 32),
-          ],
-        ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            'ID Booking: #${booking['id']}',
+            style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Kode: ${booking['booking_code'] ?? '-'}',
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Tanggal: ${booking['event_date'] ?? '-'}',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            'Waktu: ${booking['time_slot'] ?? '-'}',
+            style: TextStyle(color: Colors.grey.shade600),
+          ),
+          const SizedBox(height: 32),
+        ],
       ),
-    );
-  }
+    ),
+  );
+}
 
   @override
   Widget build(BuildContext context) {

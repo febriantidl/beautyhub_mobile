@@ -5,6 +5,9 @@ import 'register_screen.dart';
 class WelcomeScreen extends StatelessWidget {
   const WelcomeScreen({super.key});
 
+  static const Color maroon   = Color(0xFF4D0012);
+  static const Color pinkSoft = Color(0xFFCF4C4C);
+
   @override
   Widget build(BuildContext context) {
     final size = MediaQuery.of(context).size;
@@ -12,6 +15,7 @@ class WelcomeScreen extends StatelessWidget {
     return Scaffold(
       body: Stack(
         children: [
+          // ── Background foto ──
           SizedBox.expand(
             child: Image.asset(
               'assets/images/halaman_utama.jpg',
@@ -21,15 +25,14 @@ class WelcomeScreen extends StatelessWidget {
                   gradient: LinearGradient(
                     begin: Alignment.topCenter,
                     end: Alignment.bottomCenter,
-                    colors: [
-                      Color(0xFF4D0012),
-                      Color(0xFFCF4C4C),
-                    ],
+                    colors: [maroon, pinkSoft],
                   ),
                 ),
               ),
             ),
           ),
+
+          // ── Overlay gelap bawah ──
           Positioned(
             bottom: 0,
             left: 0,
@@ -40,39 +43,38 @@ class WelcomeScreen extends StatelessWidget {
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    Colors.transparent,
-                    Color(0xCC000000),
-                  ],
+                  colors: [Colors.transparent, Color(0xCC000000)],
                 ),
               ),
             ),
           ),
+
           SafeArea(
             child: Column(
               children: [
+                // ── Logo pojok kiri atas ──
                 Padding(
                   padding: const EdgeInsets.all(20),
                   child: Align(
                     alignment: Alignment.topLeft,
                     child: Container(
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(8),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.15),
+                        color: Colors.white.withValues(alpha: 0.15),
                         borderRadius: BorderRadius.circular(12),
                       ),
-                      child: const Text(
-                        'aa.',
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 20,
-                        ),
+                      child: Image.asset(
+                        'assets/images/logo.png',
+                        width: 44,
+                        height: 44,
+                        fit: BoxFit.contain,
                       ),
                     ),
                   ),
                 ),
+
                 const Spacer(),
+
                 Padding(
                   padding: const EdgeInsets.symmetric(
                       horizontal: 28, vertical: 40),
@@ -107,47 +109,66 @@ class WelcomeScreen extends StatelessWidget {
                         ),
                       ),
                       const SizedBox(height: 36),
+
+                      // ── Tombol MASUK — gradasi maroon → pink ──
                       SizedBox(
                         width: double.infinity,
                         height: 52,
-                        child: ElevatedButton(
-                          onPressed: () {
-                            Navigator.push(
+                        child: DecoratedBox(
+                          decoration: BoxDecoration(
+                            gradient: const LinearGradient(
+                              colors: [maroon, pinkSoft],
+                              begin: Alignment.topCenter,
+                              end: Alignment.bottomCenter,
+                            ),
+                            borderRadius: BorderRadius.circular(30),
+                            boxShadow: const [
+                              BoxShadow(
+                                color: Color(0x884D0012),
+                                blurRadius: 14,
+                                offset: Offset(0, 5),
+                              ),
+                            ],
+                          ),
+                          child: ElevatedButton(
+                            onPressed: () => Navigator.push(
                               context,
                               MaterialPageRoute(
                                   builder: (_) => const LoginScreen()),
-                            );
-                          },
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: const Color(0XFFCF4C4C),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(30),
                             ),
-                            elevation: 0,
-                          ),
-                          child: const Text(
-                            'MASUK',
-                            style: TextStyle(
-                              fontWeight: FontWeight.bold,
-                              fontSize: 16,
-                              letterSpacing: 1.2,
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: Colors.transparent,
+                              shadowColor: Colors.transparent,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(30),
+                              ),
+                              elevation: 0,
+                            ),
+                            child: const Text(
+                              'MASUK',
+                              style: TextStyle(
+                                color: Colors.white,
+                                fontWeight: FontWeight.bold,
+                                fontSize: 16,
+                                letterSpacing: 1.2,
+                              ),
                             ),
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 14),
+
+                      // ── Tombol DAFTAR (tetap outline putih) ──
                       SizedBox(
                         width: double.infinity,
                         height: 52,
                         child: OutlinedButton(
-                          onPressed: () {
-                            Navigator.push(
-                              context,
-                              MaterialPageRoute(
-                                  builder: (_) => const RegisterScreen()),
-                            );
-                          },
+                          onPressed: () => Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                                builder: (_) => const RegisterScreen()),
+                          ),
                           style: OutlinedButton.styleFrom(
                             foregroundColor: Colors.white,
                             side: const BorderSide(
@@ -166,6 +187,7 @@ class WelcomeScreen extends StatelessWidget {
                           ),
                         ),
                       ),
+
                       const SizedBox(height: 20),
                     ],
                   ),
