@@ -5,6 +5,7 @@ import 'chatbot_screen.dart';
 import 'image_search_screen.dart';
 import 'my_bookings_screen.dart';
 import 'notification_screen.dart';
+import 'search_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({super.key});
@@ -233,41 +234,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
           const SizedBox(height: 16),
           // ── Search bar ──
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(30),
-              boxShadow: const [
-                BoxShadow(color: Color(0x334D0012), blurRadius: 12, offset: Offset(0, 4)),
-              ],
+          GestureDetector(
+            onTap: () => Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => const SearchScreen()),
             ),
-            child: Row(
-              children: [
-                ShaderMask(
-                  shaderCallback: (b) => mainGradient.createShader(b),
-                  child: const Icon(Icons.search_rounded, color: Colors.white, size: 20),
-                ),
-                const SizedBox(width: 10),
-                const Expanded(
-                  child: Text('Cari impian make up mu disini..',
-                      style: TextStyle(color: Colors.grey, fontSize: 13)),
-                ),
-                GestureDetector(
-                  onTap: () => setState(() => _currentIndex = 2),
-                  child: Container(
-                    padding: const EdgeInsets.all(7),
-                    decoration: BoxDecoration(
-                      gradient: cardGradient,
-                      borderRadius: BorderRadius.circular(10),
-                      boxShadow: const [
-                        BoxShadow(color: Color(0x55CF4C4C), blurRadius: 8, offset: Offset(0, 3)),
-                      ],
-                    ),
-                    child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+            child: Container(
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(30),
+                boxShadow: const [
+                  BoxShadow(color: Color(0x334D0012), blurRadius: 12, offset: Offset(0, 4)),
+                ],
+              ),
+              child: Row(
+                children: [
+                  ShaderMask(
+                    shaderCallback: (b) => mainGradient.createShader(b),
+                    child: const Icon(Icons.search_rounded, color: Colors.white, size: 20),
                   ),
-                ),
-              ],
+                  const SizedBox(width: 10),
+                  const Expanded(
+                    child: Text('Cari impian make up mu disini..',
+                        style: TextStyle(color: Colors.grey, fontSize: 13)),
+                  ),
+                  GestureDetector(
+                    onTap: () => setState(() => _currentIndex = 2),
+                    child: Container(
+                      padding: const EdgeInsets.all(7),
+                      decoration: BoxDecoration(
+                        gradient: cardGradient,
+                        borderRadius: BorderRadius.circular(10),
+                        boxShadow: const [
+                          BoxShadow(color: Color(0x55CF4C4C), blurRadius: 8, offset: Offset(0, 3)),
+                        ],
+                      ),
+                      child: const Icon(Icons.camera_alt_rounded, color: Colors.white, size: 18),
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],

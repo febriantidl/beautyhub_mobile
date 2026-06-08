@@ -4,7 +4,8 @@ import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 
 class ApiService {
-  static const String baseUrl = 'http://127.0.0.1:8000/api';
+  static const String _host = '192.168.0.26';
+  static const String baseUrl = 'http://$_host:8000/api';
 
   static const String _tokenKey = 'access_token';
   static const String _userKey  = 'user_data';
