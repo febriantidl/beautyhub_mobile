@@ -82,7 +82,7 @@ class WelcomeScreen extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       const Text(
-                        'Beauty',
+                        'Beauty Hub',
                         style: TextStyle(
                           color: Colors.white,
                           fontSize: 42,

@@ -64,6 +64,7 @@ class _SplashScreenState extends State<SplashScreen>
 
   Future<void> _checkLogin() async {
     await Future.delayed(const Duration(seconds: 2));
+    await ApiService.removeToken();
     final loggedIn = await ApiService.isLoggedIn();
     if (!mounted) return;
     Navigator.pushReplacement(
