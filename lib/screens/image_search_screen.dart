@@ -18,6 +18,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
   String?       _errorMessage;
   List<dynamic> _results     = [];
   bool          _hasSearched = false;
+  Map<String, dynamic>? _analysis;
 
   final _picker = ImagePicker();
 
@@ -63,6 +64,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
         _results       = [];
         _hasSearched   = false;
         _errorMessage  = null;
+        _analysis      = null;
       });
     }
   }
@@ -73,6 +75,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
       _isLoading    = true;
       _errorMessage = null;
       _results      = [];
+      _analysis     = null;
     });
     try {
       final result = await ApiService.searchByImage(imageFile: _selectedImage!);
@@ -80,6 +83,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
       if (result['success'] == true) {
         setState(() {
           _results     = result['data'] as List;
+          _analysis    = result['analysis'];
           _hasSearched = true;
         });
       } else {
@@ -107,7 +111,6 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
     );
   }
 
-  // ── HEADER ───────────────────────────────────────────────────
   Widget _buildHeader() {
     return SafeArea(
       bottom: false,
@@ -132,8 +135,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [pinkSoft, Color(0xFFE8736B)],
-                ),
+                    colors: [pinkSoft, Color(0xFFE8736B)]),
                 borderRadius: BorderRadius.circular(20),
               ),
               child: const Row(
@@ -154,28 +156,18 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
     );
   }
 
-  // ── MAIN (belum ada foto / sudah pilih foto) ─────────────────
   Widget _buildMain() {
     return SingleChildScrollView(
       child: Column(
         children: [
           const SizedBox(height: 24),
-
-          // ── Area foto / placeholder ──
           if (_selectedImage == null) _buildPlaceholder(),
           if (_selectedImage != null) _buildImagePreview(),
-
           const SizedBox(height: 24),
-
-          // ── Tips atau tombol analisis ──
           if (_selectedImage == null) _buildTips(),
           if (_selectedImage != null) _buildAnalyzeSection(),
-
           const SizedBox(height: 24),
-
-          // ── Tombol bawah ──
           _buildBottomButtons(),
-
           const SizedBox(height: 32),
         ],
       ),
@@ -185,7 +177,6 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
   Widget _buildPlaceholder() {
     return Column(
       children: [
-        // Lingkaran logo animasi
         Container(
           width: 160,
           height: 160,
@@ -197,9 +188,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
             padding: const EdgeInsets.all(12),
             child: Container(
               decoration: const BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: mainGradient,
-              ),
+                  shape: BoxShape.circle, gradient: mainGradient),
               child: const Center(
                 child: Icon(Icons.face_retouching_natural,
                     size: 72, color: Colors.white),
@@ -217,7 +206,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
         const Padding(
           padding: EdgeInsets.symmetric(horizontal: 40),
           child: Text(
-            'AI kami akan menganalisis portofolio MUA\ndan merekomendasikan yang paling cocok untukmu',
+            'AI kami akan menganalisis warna & gaya makeup\ndan merekomendasikan MUA yang paling cocok',
             textAlign: TextAlign.center,
             style: TextStyle(color: Colors.white60, fontSize: 13, height: 1.5),
           ),
@@ -230,13 +219,11 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
     return Stack(
       alignment: Alignment.center,
       children: [
-        // Corner brackets
         SizedBox(
           width: 260,
           height: 300,
           child: CustomPaint(painter: _CornerPainter()),
         ),
-        // Foto
         ClipRRect(
           borderRadius: BorderRadius.circular(16),
           child: Image.file(
@@ -246,7 +233,6 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
             fit: BoxFit.cover,
           ),
         ),
-        // Scan line animasi
         if (_isLoading)
           Positioned(
             child: SizedBox(
@@ -254,31 +240,26 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
               height: 280,
               child: AnimatedBuilder(
                 animation: _scanAnim,
-                builder: (_, __) => Stack(
-                  children: [
-                    Positioned(
-                      top: 280 * _scanAnim.value,
-                      left: 0,
-                      right: 0,
-                      child: Container(
-                        height: 2,
-                        decoration: BoxDecoration(
-                          gradient: LinearGradient(
-                            colors: [
-                              Colors.transparent,
-                              pinkSoft.withValues(alpha: 0.8),
-                              Colors.transparent,
-                            ],
-                          ),
-                        ),
+                builder: (_, __) => Stack(children: [
+                  Positioned(
+                    top: 280 * _scanAnim.value,
+                    left: 0,
+                    right: 0,
+                    child: Container(
+                      height: 2,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(colors: [
+                          Colors.transparent,
+                          pinkSoft.withValues(alpha: 0.8),
+                          Colors.transparent,
+                        ]),
                       ),
                     ),
-                  ],
-                ),
+                  ),
+                ]),
               ),
             ),
           ),
-        // X button
         Positioned(
           top: 10,
           right: 10,
@@ -287,6 +268,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
               _selectedImage = null;
               _results       = [];
               _hasSearched   = false;
+              _analysis      = null;
             }),
             child: Container(
               padding: const EdgeInsets.all(4),
@@ -326,6 +308,8 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
           _tipRow('🎯', 'Pastikan wajah terlihat jelas & penuh'),
           const SizedBox(height: 6),
           _tipRow('📸', 'Hindari foto yang buram atau terlalu gelap'),
+          const SizedBox(height: 6),
+          _tipRow('🎨', 'Foto makeup referensi juga bisa digunakan'),
         ],
       ),
     );
@@ -335,25 +319,20 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
         children: [
           Text(emoji, style: const TextStyle(fontSize: 14)),
           const SizedBox(width: 10),
-          Text(text,
-              style: const TextStyle(color: Colors.white70, fontSize: 13)),
+          Text(text, style: const TextStyle(color: Colors.white70, fontSize: 13)),
         ],
       );
 
   Widget _buildAnalyzeSection() {
     return Column(
       children: [
-        // Status
         Row(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
-              width: 8,
-              height: 8,
+              width: 8, height: 8,
               decoration: const BoxDecoration(
-                color: Color(0xFF4CAF50),
-                shape: BoxShape.circle,
-              ),
+                  color: Color(0xFF4CAF50), shape: BoxShape.circle),
             ),
             const SizedBox(width: 6),
             const Text('Foto siap dianalisis',
@@ -361,7 +340,6 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
           ],
         ),
         const SizedBox(height: 16),
-
         if (_errorMessage != null)
           Padding(
             padding: const EdgeInsets.symmetric(horizontal: 20),
@@ -369,10 +347,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                 textAlign: TextAlign.center,
                 style: const TextStyle(color: Colors.redAccent, fontSize: 13)),
           ),
-
         const SizedBox(height: 12),
-
-        // Tombol analisis
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 20),
           child: SizedBox(
@@ -382,23 +357,21 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                 ? Container(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [maroon, pinkSoft],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+                          colors: [maroon, pinkSoft],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter),
                       borderRadius: BorderRadius.circular(30),
                     ),
                     child: const Row(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
                         SizedBox(
-                          width: 20,
-                          height: 20,
+                          width: 20, height: 20,
                           child: CircularProgressIndicator(
                               color: Colors.white, strokeWidth: 2),
                         ),
                         SizedBox(width: 12),
-                        Text('Menganalisis...',
+                        Text('Menganalisis warna & gaya...',
                             style: TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -409,16 +382,15 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                 : DecoratedBox(
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [maroon, pinkSoft],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+                          colors: [maroon, pinkSoft],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter),
                       borderRadius: BorderRadius.circular(30),
                       boxShadow: const [
                         BoxShadow(
                             color: Color(0x884D0012),
                             blurRadius: 14,
-                            offset: Offset(0, 5)),
+                            offset: Offset(0, 5))
                       ],
                     ),
                     child: ElevatedButton.icon(
@@ -440,13 +412,13 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                   ),
           ),
         ),
-
         const SizedBox(height: 10),
         GestureDetector(
           onTap: () => setState(() {
             _selectedImage = null;
             _results       = [];
             _hasSearched   = false;
+            _analysis      = null;
           }),
           child: const Text('Ganti Foto',
               style: TextStyle(
@@ -459,14 +431,12 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
     );
   }
 
-  // ── Tombol Galeri & Kamera ────────────────────────────────────
   Widget _buildBottomButtons() {
     if (_selectedImage != null) return const SizedBox.shrink();
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 20),
       child: Row(
         children: [
-          // Galeri
           Expanded(
             child: GestureDetector(
               onTap: () => _pickImage(ImageSource.gallery),
@@ -494,7 +464,6 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
             ),
           ),
           const SizedBox(width: 12),
-          // Ambil Foto
           Expanded(
             child: GestureDetector(
               onTap: () => _pickImage(ImageSource.camera),
@@ -502,16 +471,15 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                 height: 52,
                 decoration: BoxDecoration(
                   gradient: const LinearGradient(
-                    colors: [maroon, pinkSoft],
-                    begin: Alignment.topCenter,
-                    end: Alignment.bottomCenter,
-                  ),
+                      colors: [maroon, pinkSoft],
+                      begin: Alignment.topCenter,
+                      end: Alignment.bottomCenter),
                   borderRadius: BorderRadius.circular(30),
                   boxShadow: const [
                     BoxShadow(
                         color: Color(0x884D0012),
                         blurRadius: 12,
-                        offset: Offset(0, 4)),
+                        offset: Offset(0, 4))
                   ],
                 ),
                 child: const Row(
@@ -539,9 +507,12 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
   Widget _buildResults() {
     return Column(
       children: [
-        // Sub header hasil
+        // ── Kartu hasil analisis warna ──
+        if (_analysis != null) _buildAnalysisCard(),
+
+        // ── Header hasil ──
         Padding(
-          padding: const EdgeInsets.fromLTRB(20, 16, 20, 8),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 8),
           child: Row(
             children: [
               Expanded(
@@ -558,6 +529,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                   _hasSearched   = false;
                   _selectedImage = null;
                   _results       = [];
+                  _analysis      = null;
                 }),
                 child: Container(
                   padding: const EdgeInsets.symmetric(
@@ -567,13 +539,13 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: const Text('Cari Lagi',
-                      style: TextStyle(
-                          color: Colors.white70, fontSize: 12)),
+                      style: TextStyle(color: Colors.white70, fontSize: 12)),
                 ),
               ),
             ],
           ),
         ),
+
         Expanded(
           child: ListView.builder(
             padding: const EdgeInsets.fromLTRB(16, 4, 16, 24),
@@ -585,16 +557,116 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
     );
   }
 
+  Widget _buildAnalysisCard() {
+    final hex      = _analysis?['dominant_color']?['hex'] ?? '#808080';
+    final category = _analysis?['detected_category'] ?? '-';
+    final mood     = _analysis?['detected_mood'] ?? '-';
+    final message  = _analysis?['message'] ?? '';
+
+    Color dominantColor;
+    try {
+      dominantColor = Color(
+          int.parse(hex.replaceFirst('#', '0xFF')));
+    } catch (_) {
+      dominantColor = pinkSoft;
+    }
+
+    return Container(
+      margin: const EdgeInsets.fromLTRB(16, 16, 16, 4),
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: Colors.white12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.auto_awesome, color: Colors.amber, size: 16),
+              const SizedBox(width: 6),
+              const Text('Hasil Analisis AI',
+                  style: TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.w800,
+                      fontSize: 14)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          Row(
+            children: [
+              // Warna dominan
+              Column(
+                children: [
+                  Container(
+                    width: 48,
+                    height: 48,
+                    decoration: BoxDecoration(
+                      color: dominantColor,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: Colors.white30, width: 2),
+                      boxShadow: [
+                        BoxShadow(
+                            color: dominantColor.withValues(alpha: 0.5),
+                            blurRadius: 10)
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(hex.toUpperCase(),
+                      style: const TextStyle(
+                          color: Colors.white54, fontSize: 10)),
+                ],
+              ),
+              const SizedBox(width: 16),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _analysisRow('🎨', 'Gaya', category),
+                    const SizedBox(height: 4),
+                    _analysisRow('✨', 'Mood', mood),
+                    const SizedBox(height: 8),
+                    Text(message,
+                        style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 12,
+                            height: 1.4)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _analysisRow(String emoji, String label, String value) => Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 12)),
+          const SizedBox(width: 6),
+          Text('$label: ',
+              style: const TextStyle(color: Colors.white54, fontSize: 12)),
+          Text(value,
+              style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700)),
+        ],
+      );
+
   Widget _buildResultCard(dynamic mua) {
-    final name      = mua['name'] ?? '';
-    final avatar    = mua['avatar'];
-    final location  = mua['location'] ?? '';
-    final rating    = (mua['rating'] as num?)?.toDouble() ?? 0;
-    final reviews   = mua['total_reviews'] ?? 0;
-    final verified  = mua['is_verified'] ?? false;
-    final services  = mua['services'] as List? ?? [];
+    final name       = mua['name'] ?? '';
+    final avatar     = mua['avatar'];
+    final location   = mua['location'] ?? '';
+    final rating     = (mua['rating'] as num?)?.toDouble() ?? 0;
+    final reviews    = mua['total_reviews'] ?? 0;
+    final verified   = mua['is_verified'] ?? false;
+    final services   = mua['services'] as List? ?? [];
     final portfolios = mua['sample_portfolios'] as List? ?? [];
-    final id        = mua['id'];
+    final id         = mua['id'];
 
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
@@ -645,16 +717,9 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
               padding: const EdgeInsets.all(14),
               child: Row(
                 children: [
-                  // Avatar
                   Container(
-                    decoration: BoxDecoration(
-                      shape: BoxShape.circle,
-                      gradient: const LinearGradient(
-                        colors: [maroon, pinkSoft],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
-                    ),
+                    decoration: const BoxDecoration(
+                        shape: BoxShape.circle, gradient: mainGradient),
                     child: CircleAvatar(
                       radius: 26,
                       backgroundColor: Colors.transparent,
@@ -700,7 +765,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                         ]),
                         if (services.isNotEmpty)
                           Text(
-                            'Mulai Rp ${_formatPrice((services[0]['price'] as num).toDouble())}',
+                            'Mulai Rp ${_fmt((services[0]['price'] as num).toDouble())}',
                             style: const TextStyle(
                                 color: pinkSoft,
                                 fontSize: 12,
@@ -713,10 +778,9 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
                       gradient: const LinearGradient(
-                        colors: [maroon, pinkSoft],
-                        begin: Alignment.topCenter,
-                        end: Alignment.bottomCenter,
-                      ),
+                          colors: [maroon, pinkSoft],
+                          begin: Alignment.topCenter,
+                          end: Alignment.bottomCenter),
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: const Icon(Icons.arrow_forward_ios_rounded,
@@ -731,15 +795,12 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
     );
   }
 
-  String _formatPrice(double price) {
-    return price.toInt().toString().replaceAllMapped(
-      RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
-      (m) => '${m[1]}.',
-    );
-  }
+  String _fmt(double price) => price.toInt().toString().replaceAllMapped(
+        RegExp(r'(\d{1,3})(?=(\d{3})+(?!\d))'),
+        (m) => '${m[1]}.',
+      );
 }
 
-// ── Painter corner bracket ────────────────────────────────────────
 class _CornerPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -750,23 +811,15 @@ class _CornerPainter extends CustomPainter {
       ..strokeCap = StrokeCap.round;
     const len = 24.0;
     const r   = 10.0;
-
-    // Top-left
     canvas.drawLine(const Offset(r, 0), const Offset(r + len, 0), paint);
     canvas.drawLine(const Offset(0, r), const Offset(0, r + len), paint);
     canvas.drawArc(const Rect.fromLTWH(0, 0, r * 2, r * 2), 3.14, 1.57, false, paint);
-
-    // Top-right
     canvas.drawLine(Offset(size.width - r - len, 0), Offset(size.width - r, 0), paint);
     canvas.drawLine(Offset(size.width, r), Offset(size.width, r + len), paint);
     canvas.drawArc(Rect.fromLTWH(size.width - r * 2, 0, r * 2, r * 2), -1.57, 1.57, false, paint);
-
-    // Bottom-left
     canvas.drawLine(Offset(0, size.height - r - len), Offset(0, size.height - r), paint);
     canvas.drawLine(Offset(r, size.height), Offset(r + len, size.height), paint);
     canvas.drawArc(Rect.fromLTWH(0, size.height - r * 2, r * 2, r * 2), 1.57, 1.57, false, paint);
-
-    // Bottom-right
     canvas.drawLine(Offset(size.width, size.height - r - len), Offset(size.width, size.height - r), paint);
     canvas.drawLine(Offset(size.width - r - len, size.height), Offset(size.width - r, size.height), paint);
     canvas.drawArc(Rect.fromLTWH(size.width - r * 2, size.height - r * 2, r * 2, r * 2), 0, 1.57, false, paint);
