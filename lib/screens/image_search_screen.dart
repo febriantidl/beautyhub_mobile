@@ -658,6 +658,7 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
       );
 
   Widget _buildResultCard(dynamic mua) {
+    final similarity = (mua['similarity'] as num?)?.toInt() ?? 0;
     final name       = mua['name'] ?? '';
     final avatar     = mua['avatar'];
     final location   = mua['location'] ?? '';
@@ -774,17 +775,34 @@ class _ImageSearchScreenState extends State<ImageSearchScreen>
                       ],
                     ),
                   ),
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      gradient: const LinearGradient(
-                          colors: [maroon, pinkSoft],
-                          begin: Alignment.topCenter,
-                          end: Alignment.bottomCenter),
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    child: const Icon(Icons.arrow_forward_ios_rounded,
-                        size: 14, color: Colors.white),
+                  Column(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 10, vertical: 6),
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            colors: similarity >= 70
+                                ? [const Color(0xFF2E7D32), const Color(0xFF4CAF50)]
+                                : similarity >= 50
+                                    ? [const Color(0xFFE65100), const Color(0xFFFF9800)]
+                                    : [maroon, pinkSoft],
+                            begin: Alignment.topCenter,
+                            end: Alignment.bottomCenter,
+                          ),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text('$similarity%',
+                            style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 13,
+                                fontWeight: FontWeight.w900)),
+                      ),
+                      const SizedBox(height: 4),
+                      const Text('mirip',
+                          style: TextStyle(
+                              color: Colors.white54, fontSize: 10)),
+                    ],
                   ),
                 ],
               ),
